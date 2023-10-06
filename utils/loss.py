@@ -4,14 +4,14 @@ from torch import nn
 
 class LabelSmoothingLoss(nn.Module):
     """Cross Entropy with Label Smoothing.
-    
+
     Attributes:
         num_classes (int): Number of target classes.
         smoothing (float, optional): Smoothing fraction constant, in the range (0.0, 1.0). Defaults to 0.1.
         dim (int, optional): Dimension across which to apply loss. Defaults to -1.
     """
 
-    def __init__(self, num_classes: int, smoothing : float = 0.1, dim : int = -1):
+    def __init__(self, num_classes: int, smoothing: float = 0.1, dim: int = -1):
         """Initializer for LabelSmoothingLoss.
 
         Args:
@@ -20,7 +20,7 @@ class LabelSmoothingLoss(nn.Module):
             dim (int, optional): Dimension across which to apply loss. Defaults to -1.
         """
         super().__init__()
-        
+
         self.confidence = 1.0 - smoothing
         self.smoothing = smoothing
         self.cls = num_classes

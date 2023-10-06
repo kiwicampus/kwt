@@ -1,12 +1,13 @@
 """Miscellaneous helper functions."""
 
-import torch
-from torch import nn, optim
-import numpy as np
-import random
 import os
+import random
+
+import numpy as np
+import torch
 import wandb
 from models.kwt import KWT, kwt_from_name
+from torch import nn, optim
 
 
 def seed_everything(seed: str) -> None:
@@ -15,14 +16,14 @@ def seed_everything(seed: str) -> None:
     Args:
         seed (int): Supplied seed.
     """
-    
+
     random.seed(seed)
-    os.environ['PYTHONHASHSEED'] = str(seed)
+    os.environ["PYTHONHASHSEED"] = str(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     torch.backends.cudnn.deterministic = True
-    print(f'Set seed {seed}')
+    print(f"Set seed {seed}")
 
 
 def count_params(model: nn.Module) -> int:
@@ -34,7 +35,7 @@ def count_params(model: nn.Module) -> int:
     Returns:
         int: Parameter count.
     """
-    
+
     return sum(map(lambda p: p.data.numel(), model.parameters()))
 
 
@@ -65,12 +66,14 @@ def log(log_dict: dict, step: int, config: dict) -> None:
     if config["exp"]["wandb"]:
         wandb.log(log_dict, step=step)
 
-    log_message = f"Step: {step} | " + " | ".join([f"{k}: {v}" for k, v in log_dict.items()])
+    log_message = f"Step: {step} | " + " | ".join(
+        [f"{k}: {v}" for k, v in log_dict.items()]
+    )
 
     # write logs to disk
     if config["exp"]["log_to_file"]:
         log_file = os.path.join(config["exp"]["save_dir"], "training_log.txt")
-    
+
         with open(log_file, "a+") as f:
             f.write(log_message + "\n")
 
@@ -95,7 +98,14 @@ def get_model(model_config: dict) -> nn.Module:
         return KWT(**model_config)
 
 
-def save_model(epoch: int, val_acc: float, save_path: str, net: nn.Module, optimizer : optim.Optimizer = None, log_file : str = None) -> None:
+def save_model(
+    epoch: int,
+    val_acc: float,
+    save_path: str,
+    net: nn.Module,
+    optimizer: optim.Optimizer = None,
+    log_file: str = None,
+) -> None:
     """Saves checkpoint.
 
     Args:
@@ -111,15 +121,16 @@ def save_model(epoch: int, val_acc: float, save_path: str, net: nn.Module, optim
         "epoch": epoch,
         "val_acc": val_acc,
         "model_state_dict": net.state_dict(),
-        "optimizer_state_dict": optimizer.state_dict() if optimizer is not None else optimizer
+        "optimizer_state_dict": optimizer.state_dict()
+        if optimizer is not None
+        else optimizer,
     }
 
     torch.save(ckpt_dict, save_path)
 
     log_message = f"Saved {save_path} with accuracy {val_acc}."
     print(log_message)
-    
+
     if log_file is not None:
         with open(log_file, "a+") as f:
             f.write(log_message + "\n")
-    

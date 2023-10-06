@@ -1,14 +1,23 @@
-import torch
-from torch import nn, optim
-from typing import Callable, Tuple
-from torch.utils.data import DataLoader
-from utils.misc import log, save_model
 import os
 import time
+from typing import Callable, Tuple
+
+import torch
+from torch import nn, optim
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+from utils.misc import log, save_model
 
-def train_single_batch(net: nn.Module, data: torch.Tensor, targets: torch.Tensor, optimizer: optim.Optimizer, criterion: Callable, device: torch.device) -> Tuple[float, int]:
+
+def train_single_batch(
+    net: nn.Module,
+    data: torch.Tensor,
+    targets: torch.Tensor,
+    optimizer: optim.Optimizer,
+    criterion: Callable,
+    device: torch.device,
+) -> Tuple[float, int]:
     """Performs a single training step.
 
     Args:
@@ -37,7 +46,9 @@ def train_single_batch(net: nn.Module, data: torch.Tensor, targets: torch.Tensor
 
 
 @torch.no_grad()
-def evaluate(net: nn.Module, criterion: Callable, dataloader: DataLoader, device: torch.device) -> Tuple[float, float]:
+def evaluate(
+    net: nn.Module, criterion: Callable, dataloader: DataLoader, device: torch.device
+) -> Tuple[float, float]:
     """Performs inference.
 
     Args:
@@ -67,7 +78,15 @@ def evaluate(net: nn.Module, criterion: Callable, dataloader: DataLoader, device
     return accuracy, running_loss / len(dataloader)
 
 
-def train(net: nn.Module, optimizer: optim.Optimizer, criterion: Callable, trainloader: DataLoader, valloader: DataLoader, schedulers: dict, config: dict) -> None:
+def train(
+    net: nn.Module,
+    optimizer: optim.Optimizer,
+    criterion: Callable,
+    trainloader: DataLoader,
+    valloader: DataLoader,
+    schedulers: dict,
+    config: dict,
+) -> None:
     """Trains model.
 
     Args:
@@ -79,26 +98,28 @@ def train(net: nn.Module, optimizer: optim.Optimizer, criterion: Callable, train
         schedulers (dict): Dict containing schedulers.
         config (dict): Config dict.
     """
-    
+
     step = 0
     best_acc = 0.0
     n_batches = len(trainloader)
     device = config["hparams"]["device"]
     log_file = os.path.join(config["exp"]["save_dir"], "training_log.txt")
-    
+
     ############################
     # start training
     ############################
     net.train()
-    
+
     for epoch in range(config["hparams"]["n_epochs"]):
         t0 = time.time()
         running_loss = 0.0
         correct = 0
 
         for batch_index, (data, targets) in enumerate(trainloader):
-
-            if schedulers["warmup"] is not None and epoch < config["hparams"]["scheduler"]["n_warmup"]:
+            if (
+                schedulers["warmup"] is not None
+                and epoch < config["hparams"]["scheduler"]["n_warmup"]
+            ):
                 schedulers["warmup"].step()
 
             elif schedulers["scheduler"] is not None:
@@ -108,21 +129,32 @@ def train(net: nn.Module, optimizer: optim.Optimizer, criterion: Callable, train
             # optimization step
             ####################
 
-            loss, corr = train_single_batch(net, data, targets, optimizer, criterion, device)
+            loss, corr = train_single_batch(
+                net, data, targets, optimizer, criterion, device
+            )
             running_loss += loss
             correct += corr
 
-            if not step % config["exp"]["log_freq"]:       
-                log_dict = {"epoch": epoch, "loss": loss, "lr": optimizer.param_groups[0]["lr"]}
+            if not step % config["exp"]["log_freq"]:
+                log_dict = {
+                    "epoch": epoch,
+                    "loss": loss,
+                    "lr": optimizer.param_groups[0]["lr"],
+                }
                 log(log_dict, step, config)
 
             step += 1
-            
+
         #######################
         # epoch complete
         #######################
 
-        log_dict = {"epoch": epoch, "time_per_epoch": time.time() - t0, "train_acc": correct/(len(trainloader.dataset)), "avg_loss_per_ep": running_loss/len(trainloader)}
+        log_dict = {
+            "epoch": epoch,
+            "time_per_epoch": time.time() - t0,
+            "train_acc": correct / (len(trainloader.dataset)),
+            "avg_loss_per_ep": running_loss / len(trainloader),
+        }
         log(log_dict, step, config)
 
         if not epoch % config["exp"]["val_freq"]:
@@ -134,7 +166,7 @@ def train(net: nn.Module, optimizer: optim.Optimizer, criterion: Callable, train
             if val_acc > best_acc:
                 best_acc = val_acc
                 save_path = os.path.join(config["exp"]["save_dir"], "best.pth")
-                save_model(epoch, val_acc, save_path, net, optimizer, log_file) 
+                save_model(epoch, val_acc, save_path, net, optimizer, log_file)
 
     ###########################
     # training complete
