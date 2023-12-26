@@ -5,7 +5,6 @@ import os
 
 
 def main(args):
-
     train_list, val_list, test_list, label_map = get_train_val_test_split(
         args.data_root, args.val_list_file, args.test_list_file
     )
